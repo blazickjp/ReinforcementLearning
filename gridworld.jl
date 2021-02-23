@@ -8,10 +8,12 @@ struct Gridworld
     discount::Number
 end
 
+"Check if current state is in End State"
 function isEnd(mdp::Gridworld, state)
     return state in mdp.endstates
 end
 
+"Retunrs all possible actions given current state"
 function actions(mdp::Gridworld, state)
     actions = ["left", "right", "up", "down"]
     if isEnd(mdp, state)
@@ -31,10 +33,13 @@ function actions(mdp::Gridworld, state)
     end
     return actions
 end
+
+"Helper function to return all states"
 function states(mdp::Gridworld)
     return 1:mdp.width^2
 end
 
+"Returns tuple of (New State, Probability, Reward)"
 function succProbReward(mdp::Gridworld, state, action)
     result = []
     if action == "right"
@@ -49,6 +54,7 @@ function succProbReward(mdp::Gridworld, state, action)
     return result
 end
 
+"Impliments Value iteration on Gridworld Struct"
 function valueIteration(mdp::Gridworld)
     # Initialize value and policy arrays
     value =  Array{Float64}(undef, length(states(mdp)))
@@ -92,6 +98,7 @@ function valueIteration(mdp::Gridworld)
     return out
 end
 
+"Generates plot with V*(s) values for each state in Grid"
 function plotValueGrid(mdp::Gridworld)
     result = valueIteration(grid)
     print(result)
