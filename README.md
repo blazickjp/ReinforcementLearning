@@ -1,2 +1,2 @@
 # ReinforcementLearning
-Work towards a better understanding of various RL topics
+Working towards a better understanding of various RL topics
