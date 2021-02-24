@@ -2,19 +2,20 @@ using Gadfly
 using Compose
 using DataFrames
 
-struct Gridworld
+abstract type Gridworld end 
+mutable struct simpleGrid <: Gridworld
     width::Number
     endstates::Any
     discount::Number
 end
 
 "Check if current state is in End State"
-function isEnd(mdp::Gridworld, state)
+function isEnd(mdp::simpleGrid, state)
     return state in mdp.endstates
 end
 
 "Retunrs all possible actions given current state"
-function actions(mdp::Gridworld, state)
+function actions(mdp::simpleGrid, state)
     actions = ["left", "right", "up", "down"]
     if isEnd(mdp, state)
         return []
@@ -35,12 +36,12 @@ function actions(mdp::Gridworld, state)
 end
 
 "Helper function to return all states"
-function states(mdp::Gridworld)
+function states(mdp::simpleGrid)
     return 1:mdp.width^2
 end
 
 "Returns tuple of (New State, Probability, Reward)"
-function succProbReward(mdp::Gridworld, state, action)
+function succProbReward(mdp::simpleGrid, state, action)
     result = []
     if action == "right"
         push!(result, [state + 1, 1, -1])
@@ -54,7 +55,7 @@ function succProbReward(mdp::Gridworld, state, action)
     return result
 end
 
-"Impliments Value iteration on Gridworld Struct"
+"Impliments Value iteration on simpleGrid Struct"
 function valueIteration(mdp::Gridworld)
     # Initialize value and policy arrays
     value =  Array{Float64}(undef, length(states(mdp)))
@@ -99,7 +100,7 @@ function valueIteration(mdp::Gridworld)
 end
 
 "Generates plot with V*(s) values for each state in Grid"
-function plotValueGrid(mdp::Gridworld)
+function plotValueGrid(mdp::simpleGrid)
     result = valueIteration(grid)
     print(result)
     df = DataFrame(
@@ -127,7 +128,7 @@ function plotValueGrid(mdp::Gridworld)
             grid_line_width=2pt, grid_line_style=:solid))
 end
 
-grid = Gridworld(5, [1, 25], 1)
+grid = simpleGrid(5, [1, 25], 1)
 plotValueGrid(grid)
 
 
