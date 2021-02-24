@@ -8,14 +8,34 @@ mutable struct simpleGrid <: Gridworld
     endstates::Any
     discount::Number
 end
+mutable struct volcanoGrid <: Gridworld
+    width::Number
+    penaltyStates::Any
+    penalty::Number
+    rewardStates::Any
+    reward::Number
+    probSlip::Number
+    discount::Number
+end
 
 "Check if current state is in End State"
 function isEnd(mdp::simpleGrid, state)
     return state in mdp.endstates
 end
 
+"Check if current state is in End State"
+function isEnd(mdp::volcanoGrid, state)
+    if state ∈ mdp.penaltyStates
+        return true
+    elseif state ∈ mdp.rewardStates
+        return true
+    else
+        return false
+    end
+end
+
 "Retunrs all possible actions given current state"
-function actions(mdp::simpleGrid, state)
+function actions(mdp::Gridworld, state)
     actions = ["left", "right", "up", "down"]
     if isEnd(mdp, state)
         return []
@@ -35,22 +55,47 @@ function actions(mdp::simpleGrid, state)
     return actions
 end
 
+function newState(mdp::Gridworld, state::Number, action::String)
+    if action == "right"
+        return state + 1
+    elseif action == "left"
+        return state - 1
+    elseif action == "down"
+        return state + mdp.width
+    elseif action == "up"
+        return state - mdp.width
+    end
+end
+
 "Helper function to return all states"
-function states(mdp::simpleGrid)
+function states(mdp::Gridworld)
     return 1:mdp.width^2
 end
 
 "Returns tuple of (New State, Probability, Reward)"
 function succProbReward(mdp::simpleGrid, state, action)
     result = []
-    if action == "right"
-        push!(result, [state + 1, 1, -1])
-    elseif action == "left"
-        push!(result, [state - 1, 1, -1])
-    elseif action == "down"
-        push!(result, [state + mdp.width, 1, -1])
-    elseif action == "up"
-        push!(result, [state - mdp.width, 1, -1])
+    push!(result, [newState(mdp, state, action), 1, -1])
+    return result
+end
+
+"Returns tuple of (New State, Probability, Reward)"
+function succProbReward(mdp::volcanoGrid, state, action)
+    result = []
+    n = length(actions(mdp, state)) - 1
+    for i in actions(mdp, state)
+        if newState(mdp, state, i) ∈ mdp.penaltyStates
+            reward = mdp.penalty
+        elseif newState(mdp, state, i) ∈ mdp.rewardStates
+            reward = mdp.reward
+        else
+            reward = -1
+        end
+        if i == action
+            push!(result, [newState(mdp, state, i), 1 - mdp.probSlip, reward])
+        else
+            push!(result, [newState(mdp, state, i), mdp.probSlip / n, reward])
+        end
     end
     return result
 end
@@ -101,8 +146,7 @@ end
 
 "Generates plot with V*(s) values for each state in Grid"
 function plotValueGrid(mdp::simpleGrid)
-    result = valueIteration(grid)
-    print(result)
+    result = valueIteration(mdp)
     df = DataFrame(
         [(y=y, x=x,)
             for y in -(1:grid.width) 
@@ -128,7 +172,43 @@ function plotValueGrid(mdp::simpleGrid)
             grid_line_width=2pt, grid_line_style=:solid))
 end
 
+function plotValueGrid(mdp::volcanoGrid)
+    result = valueIteration(mdp)
+    df = DataFrame(
+        [(y=y, x=x,)
+            for y in -(1:mdp.width) 
+            for x in 1:mdp.width
+        ])
+    df[!, :label] = [string(round(result[2], digits=2)) for result in result]
+    df[!, :rewardStates] = [state ∈ mdp.rewardStates for state in states(mdp)]
+    df[!, :penaltyStates] = [state ∈ mdp.penaltyStates for state in states(mdp)]
+    reward_coords = filter(row -> row.rewardStates == true, df)
+    penalty_coords = filter(row -> row.penaltyStates == true, df)
+    x = mdp.width + .5 
+    plot(df, x=:x, y=:y, label=:label, Geom.label,
+        Guide.xticks(ticks=0.5:x, label=false),
+        Guide.yticks(ticks=-(0.5:x), label=false), 
+        Guide.Annotation(compose(context(),             
+        (context(), 
+            rectangle(
+                reward_coords[!,:x] .- .5,
+                reward_coords[!,:y] .- .5,
+                ones(size(reward_coords)[1]),
+                ones(size(reward_coords)[1])), 
+            fill("green"),fillopacity(0.1), stroke("green")),
+        (context(), 
+            rectangle(
+                penalty_coords[!,:x] .- .5,
+                penalty_coords[!,:y] .- .5,
+                ones(size(penalty_coords)[1]),
+                ones(size(penalty_coords)[1])), 
+            fill("red"),fillopacity(0.1), stroke("red")),
+        )),
+        Theme(alphas = [.5], grid_color="black", 
+            grid_line_width=2pt, grid_line_style=:solid))
+end
+
 grid = simpleGrid(5, [1, 25], 1)
+grid2 = volcanoGrid(4, [3,7], -100, [4], 10, 0.3, 1)
 plotValueGrid(grid)
-
-
+plotValueGrid(grid2)
