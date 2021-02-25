@@ -1,13 +1,17 @@
+
+module grid
 using Gadfly
 using Compose
 using DataFrames
 
 abstract type Gridworld end 
+
 mutable struct simpleGrid <: Gridworld
     width::Number
     endstates::Any
     discount::Number
 end
+
 mutable struct volcanoGrid <: Gridworld
     width::Number
     penaltyStates::Any
@@ -149,16 +153,18 @@ function plotValueGrid(mdp::simpleGrid)
     result = valueIteration(mdp)
     df = DataFrame(
         [(y=y, x=x,)
-            for y in -(1:grid.width) 
-            for x in 1:grid.width
+            for y in -(1:mdp.width) 
+            for x in 1:mdp.width
         ])
     df[!, :label] = [string(result[2]) for result in result]
     df[!, :endState] = [isEnd(mdp, state) for state in states(mdp)]
     end_coords = filter(row -> row.endState == true, df)
-    x = grid.width + .5 
+    x = mdp.width + .5 
     plot(df, x=:x, y=:y, label=:label, Geom.label,
         Guide.xticks(ticks=0.5:x, label=false),
         Guide.yticks(ticks=-(0.5:x), label=false), 
+        Guide.title("Simple Gridworld V(s) ∀ s ∈ S"),
+        Guide.xlabel(nothing), Guide.ylabel(nothing),
         Guide.Annotation(compose(context(),             
         (context(), 
             rectangle(
@@ -168,7 +174,7 @@ function plotValueGrid(mdp::simpleGrid)
                 ones(size(end_coords)[1])), 
             fill("green"),fillopacity(0.1), stroke("green")),
         )),
-        Theme(alphas = [.5], grid_color="black", 
+        Theme(alphas = [.5], grid_color="black", minor_label_font_size=24pt,
             grid_line_width=2pt, grid_line_style=:solid))
 end
 
@@ -188,6 +194,8 @@ function plotValueGrid(mdp::volcanoGrid)
     plot(df, x=:x, y=:y, label=:label, Geom.label,
         Guide.xticks(ticks=0.5:x, label=false),
         Guide.yticks(ticks=-(0.5:x), label=false), 
+        Guide.title("Volcano Gridworld V(s) ∀ s ∈ S"),
+        Guide.xlabel(nothing), Guide.ylabel(nothing),
         Guide.Annotation(compose(context(),             
         (context(), 
             rectangle(
@@ -204,11 +212,12 @@ function plotValueGrid(mdp::volcanoGrid)
                 ones(size(penalty_coords)[1])), 
             fill("red"),fillopacity(0.1), stroke("red")),
         )),
-        Theme(alphas = [.5], grid_color="black", 
+        Theme(alphas = [.5], grid_color="black", major_label_font_size=14pt,
             grid_line_width=2pt, grid_line_style=:solid))
 end
 
-grid = simpleGrid(5, [1, 25], 1)
-grid2 = volcanoGrid(4, [3,7], -100, [4], 10, 0.3, 1)
-plotValueGrid(grid)
-plotValueGrid(grid2)
+# grid = simpleGrid(5, [1, 25], 1)
+# grid2 = volcanoGrid(4, [3,7], -100, [4], 10, 0.3, 1)
+# plotValueGrid(grid)
+# plotValueGrid(grid2)
+end
