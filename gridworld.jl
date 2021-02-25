@@ -174,7 +174,7 @@ function plotValueGrid(mdp::simpleGrid)
                 ones(size(end_coords)[1])), 
             fill("green"),fillopacity(0.1), stroke("green")),
         )),
-        Theme(alphas = [.5], grid_color="black", minor_label_font_size=24pt,
+        Theme(alphas = [.5], grid_color="black",
             grid_line_width=2pt, grid_line_style=:solid))
 end
 
@@ -212,7 +212,7 @@ function plotValueGrid(mdp::volcanoGrid)
                 ones(size(penalty_coords)[1])), 
             fill("red"),fillopacity(0.1), stroke("red")),
         )),
-        Theme(alphas = [.5], grid_color="black", major_label_font_size=14pt,
+        Theme(alphas = [.5], grid_color="black",
             grid_line_width=2pt, grid_line_style=:solid))
 end
 
