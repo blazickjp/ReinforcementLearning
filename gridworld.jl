@@ -1,8 +1,8 @@
 
-module grid
 using Gadfly
 using Compose
 using DataFrames
+using StatsBase
 
 abstract type Gridworld end 
 
@@ -79,7 +79,9 @@ end
 "Returns tuple of (New State, Probability, Reward)"
 function succProbReward(mdp::simpleGrid, state, action)
     result = []
-    push!(result, [newState(mdp, state, action), 1, -1])
+    newS = newState(mdp, state, action)
+    reward = isEnd(mdp, newS) ? 0 : -1
+    push!(result, [newS, 1, reward])
     return result
 end
 
@@ -104,11 +106,61 @@ function succProbReward(mdp::volcanoGrid, state, action)
     return result
 end
 
+"Sample from actions according to probabilities and return new state, reward"
+function sampleAction(mdp::Gridworld, state, action)
+    newStates = []
+    probs = []
+    rewards = []
+    for (newState, prob, reward) in succProbReward(mdp, state, action)
+        push!(newStates, newState)
+        push!(probs, prob)
+        push!(rewards, reward)
+    end 
+    idx = sample(1:length(probs), ProbabilityWeights(convert(Array{Float64,1}, probs)))
+    return newStates[idx], rewards[idx] 
+end
+
+function TDIteraation(mdp::Gridworld, episodes, exploration_prob=0.2, startState=1, α=.001)
+    value =  zeros(length(states(mdp)))
+    delta = []
+    function Q(mdp::Gridworld, state, action)
+        q = sum(
+                prob * (reward + mdp.discount * value[Int(newState)]) 
+                for (newState, prob, reward) in succProbReward(mdp, state, action)
+            )
+        return q
+    end
+    function getAction(mdp::Gridworld, state)
+        if rand() < exploration_prob
+            return rand(actions(mdp, state))
+        else
+            return maximum((Q(mdp, state, action), action) for action in actions(mdp, state))[2]
+        end
+    end
+    # For each trial
+    for i ∈ 1:episodes
+        state = startState
+        # Run each episode
+        while true
+            action = getAction(mdp, state)
+            newState, reward = sampleAction(mdp, state, action)
+            before = value[Int(state)]
+            value[Int(state)] += α .* (reward .+ mdp.discount .* value[Int(newState)] .- value[Int(state)])
+            push!(delta, before - value[Int(state)])
+            if isEnd(mdp, newState) break end
+            state = newState
+        end
+    end
+    #plot(1:length(delta), delta, Geom.line)
+    return DataFrame(value=value, state = states(mdp))
+end
+
 "Impliments Value iteration on simpleGrid Struct"
 function valueIteration(mdp::Gridworld)
     # Initialize value and policy arrays
     value =  Array{Float64}(undef, length(states(mdp)))
     p = Array{String}(undef, length(states(mdp)))
+    
     for (i, state) in enumerate(states(mdp))
         value[i] = 0
     end
@@ -220,4 +272,5 @@ end
 # grid2 = volcanoGrid(4, [3,7], -100, [4], 10, 0.3, 1)
 # plotValueGrid(grid)
 # plotValueGrid(grid2)
-end
+
+
