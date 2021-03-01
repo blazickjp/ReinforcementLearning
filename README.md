@@ -6,4 +6,4 @@ Working towards a better understanding of various RL topics
 - [x] Value Iteration
 - [ ] Policy Iteration
 - [ ] Q - Learning
-- [ ] TD - Learning
+- [x] TD - Learning
