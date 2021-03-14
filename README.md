@@ -7,3 +7,6 @@ Working towards a better understanding of various RL topics
 - [ ] Policy Iteration
 - [ ] Q - Learning
 - [x] TD - Learning
+- [ ] Policy Gradient Method
+- [ ] DeepQLearning
+- [ ] Create Blackjack Environment
